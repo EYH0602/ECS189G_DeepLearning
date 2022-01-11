@@ -1,0 +1,2 @@
+The dataset contains 16 instances: 16 rows, each row represents one data instance.
+For each row, it contains five numbers: the first four numbers are the features of the instance and the last number is the label.
