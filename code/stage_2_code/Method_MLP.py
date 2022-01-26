@@ -11,11 +11,14 @@ import torch
 from torch import nn
 import numpy as np
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print("training on: " + device.type)
+
 
 class MethodMLP(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 1000
+    max_epoch = 2000
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-3
 
@@ -65,7 +68,10 @@ class MethodMLP(method, nn.Module):
         # you can try to split X and y into smaller-sized batches by yourself
         for epoch in range(self.max_epoch):  # you can do an early stop if self.max_epoch is too much...
             # get the output, we need to covert X into torch.tensor so pytorch algorithm can operate on it
-            y_pred = self.forward(torch.FloatTensor(np.array(X)))
+
+            X_train = torch.FloatTensor(np.array(X))
+            X_train.to(device)  # use cuda if available
+            y_pred = self.forward(X_train)
             # convert y to torch.tensor as well
             y_true = torch.LongTensor(np.array(y))
             # calculate the training loss
