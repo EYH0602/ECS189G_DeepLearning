@@ -18,9 +18,10 @@ print("training on: " + device.type)
 class MethodMLP(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 2000
+    max_epoch = 1000
+    except_accuracy = 0.995
     # it defines the learning rate for gradient descent based optimizer for model learning
-    learning_rate = 1e-3
+    learning_rate = 1e-4
 
     # it defines the MLP model architecture, e.g.,
     # how many layers, size of variables in each layer, activation function, etc.
@@ -29,12 +30,16 @@ class MethodMLP(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
         # check here for nn.Linear doc: https://pytorch.org/docs/stable/generated/torch.nn.Linear.html
-        self.fc_layer_1 = nn.Linear(784, 784)
+        self.fc_layer_1 = nn.Linear(784, 512)
         # check here for nn.ReLU doc: https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html
         self.activation_func_1 = nn.ReLU()
-        self.fc_layer_2 = nn.Linear(784, 10)
+
+        self.fc_layer_2 = nn.Linear(512, 512)
+        self.activation_func_2 = nn.ReLU()
+
+        self.fc_layer_3 = nn.Linear(512, 10)
         # check here for nn.Softmax doc: https://pytorch.org/docs/stable/generated/torch.nn.Softmax.html
-        self.activation_func_2 = nn.Softmax(dim=1)
+        self.activation_func_3 = nn.Softmax(dim=1)
 
     # it defines the forward propagation function for input x
     # this function will calculate the output layer by layer
@@ -43,11 +48,12 @@ class MethodMLP(method, nn.Module):
         """Forward propagation"""
         # hidden layer embeddings
         h = self.activation_func_1(self.fc_layer_1(x))
+        h = self.activation_func_2(self.fc_layer_2(h))
         # output layer result
         # self.fc_layer_2(h) will be a nx2 tensor
         # n (denotes the input instance number): 0th dimension; 2 (denotes the class number): 1st dimension
         # we do softmax along dim=1 to get the normalized classification probability distributions for each instance
-        y_pred = self.activation_func_2(self.fc_layer_2(h))
+        y_pred = self.activation_func_3(self.fc_layer_3(h))
         return y_pred
 
     # backward error propagation will be implemented by pytorch automatically
@@ -56,8 +62,6 @@ class MethodMLP(method, nn.Module):
     def train(self, X, y):
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        # check here for the gradient init doc: https://pytorch.org/docs/stable/generated/torch.optim.Optimizer.zero_grad.html
-        optimizer.zero_grad()
         # check here for the nn.CrossEntropyLoss doc: https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
         loss_function = nn.CrossEntropyLoss()
         # for training accuracy investigation purpose
@@ -67,6 +71,10 @@ class MethodMLP(method, nn.Module):
         # we don't do mini-batch, we use the whole input as one batch
         # you can try to split X and y into smaller-sized batches by yourself
         for epoch in range(self.max_epoch):  # you can do an early stop if self.max_epoch is too much...
+
+            # gradient optimizer need to be clear every epoch
+            optimizer.zero_grad()
+
             # get the output, we need to covert X into torch.tensor so pytorch algorithm can operate on it
 
             X_train = torch.FloatTensor(np.array(X))
