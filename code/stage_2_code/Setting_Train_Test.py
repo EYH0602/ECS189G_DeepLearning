@@ -11,6 +11,7 @@ import numpy as np
 
 
 class SettingTrainTest(setting):
+    plotter = None
 
     def load_run_save_evaluate(self):
         # load dataset
@@ -19,6 +20,7 @@ class SettingTrainTest(setting):
         # run MethodModule
         # self.method.data = {'train': {'X': X_train, 'y': y_train}, 'test': {'X': X_test, 'y': y_test}}
         self.method.data = loaded_data
+        self.method.plotter = self.plotter
         learned_result = self.method.run()
 
         # save raw ResultModule
@@ -27,4 +29,4 @@ class SettingTrainTest(setting):
 
         self.evaluate.data = learned_result
 
-        return self.evaluate.evaluate(), None
+        return self.evaluate.evaluate_accuracy(), None

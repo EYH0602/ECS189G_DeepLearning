@@ -22,6 +22,7 @@ class MethodMLP(method, nn.Module):
     except_accuracy = 0.995
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-4
+    plotter = None
 
     # it defines the MLP model architecture, e.g.,
     # how many layers, size of variables in each layer, activation function, etc.
@@ -60,6 +61,11 @@ class MethodMLP(method, nn.Module):
     # so, we don't need to define the error backpropagation function here
 
     def train(self, X, y):
+        
+        # check for plot setting
+        if not self.plotter:
+            raise RuntimeWarning("Plotter not defined.")
+        
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         # check here for the nn.CrossEntropyLoss doc: https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
@@ -106,6 +112,11 @@ class MethodMLP(method, nn.Module):
                     'F1', accuracy_evaluator.evaluate_f1(),
                     'Loss:', train_loss.item()
                 )
+                
+                # add to graph if avaliable
+                if self.plotter:
+                    self.plotter.xs.append(epoch)
+                    self.plotter.ys.append(train_loss.item())
 
     def test(self, X):
         # do the testing, and result the result
