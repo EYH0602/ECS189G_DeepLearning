@@ -17,7 +17,7 @@ class Dataset_Loader(dataset):
         super().__init__(dName, dDescription)
     
     def load(self):
-        print('loading data...')
+        print('loading data from {}...'.format(self.dataset_source_file_name))
         X = []
         y = []
         with open(self.dataset_source_folder_path + self.dataset_source_file_name, 'r') as f:
