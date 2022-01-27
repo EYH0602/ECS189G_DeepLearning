@@ -18,6 +18,7 @@ if 1:
     data_obj = Dataset_Loader('train', '')
     data_obj.dataset_source_folder_path = '../../data/stage_2_data/stage_2_data/'
     data_obj.dataset_source_file_name = 'train.csv'
+    data_obj.test_source_file_name = 'test.csv'
 
     method_obj = Method_MLP('multi-layer perceptron', '')
 
