@@ -7,7 +7,7 @@ Concrete Evaluate class for a specific evaluation metrics
 
 from code.base_class.evaluate import evaluate
 from sklearn.metrics import \
-    accuracy_score, precision_score, recall_score
+    accuracy_score, precision_score, recall_score, f1_score
 
 
 class EvaluateAccuracy(evaluate):
@@ -24,3 +24,7 @@ class EvaluateAccuracy(evaluate):
     def evaluate_recall(self):
         print('evaluating recall performance...')
         return recall_score(self.data['true_y'], self.data['pred_y'], average="micro")
+    
+    def evaluate_f1(self):
+        print('evaluating recall performance...')
+        return f1_score(self.data['true_y'], self.data['pred_y'], average="micro")

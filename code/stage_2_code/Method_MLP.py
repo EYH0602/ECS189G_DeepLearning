@@ -103,6 +103,7 @@ class MethodMLP(method, nn.Module):
                     'Accuracy:', accuracy_evaluator.evaluate_accuracy(),
                     'Precision', accuracy_evaluator.evaluate_precision(),
                     'Recall', accuracy_evaluator.evaluate_recall(),
+                    'F1', accuracy_evaluator.evaluate_f1(),
                     'Loss:', train_loss.item()
                 )
 
