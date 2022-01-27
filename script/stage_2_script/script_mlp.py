@@ -3,6 +3,7 @@ from code.stage_2_code.Method_MLP import MethodMLP
 from code.stage_2_code.Result_Saver import ResultSaver
 from code.stage_2_code.Setting_Train_Test import SettingTrainTest
 from code.stage_2_code.Evaluate_Accuracy import EvaluateAccuracy
+from code.stage_2_code.Training_Conv_Plotter import Plotter
 import numpy as np
 import torch
 
@@ -28,11 +29,14 @@ if 1:
     setting_obj = SettingTrainTest('train test', '')
 
     evaluate_obj = EvaluateAccuracy('accuracy', '')
+    
+    plotter = Plotter()
     # ------------------------------------------------------
 
     # ---- running section ---------------------------------
     print('************ Start ************')
     setting_obj.prepare(data_obj, method_obj, result_obj, evaluate_obj)
+    setting_obj.plotter = Plotter
     setting_obj.print_setup_summary()
     mean_score, std_score = setting_obj.load_run_save_evaluate()
     print('************ Overall Performance ************')
@@ -40,5 +44,5 @@ if 1:
     print('************ Finish ************')
     # ------------------------------------------------------
     
-
+    plotter.plot("stage_2_plot.png")
     
