@@ -70,7 +70,8 @@ class MethodMLP(method, nn.Module):
         # it will be an iterative gradient updating process
         # we don't do mini-batch, we use the whole input as one batch
         # you can try to split X and y into smaller-sized batches by yourself
-        for epoch in range(self.max_epoch):  # you can do an early stop if self.max_epoch is too much...
+        # you can do an early stop if self.max_epoch is too much...
+        for epoch in range(self.max_epoch):
 
             # gradient optimizer need to be clear every epoch
             optimizer.zero_grad()
@@ -93,8 +94,17 @@ class MethodMLP(method, nn.Module):
             optimizer.step()
 
             if epoch % 100 == 0:
-                accuracy_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
-                print('Epoch:', epoch, 'Accuracy:', accuracy_evaluator.evaluate(), 'Loss:', train_loss.item())
+                accuracy_evaluator.data = {
+                    'true_y': y_true,
+                    'pred_y': y_pred.max(1)[1]
+                }
+                print(
+                    'Epoch:', epoch,
+                    'Accuracy:', accuracy_evaluator.evaluate_accuracy(),
+                    'Precision', accuracy_evaluator.evaluate_precision(),
+                    'Recall', accuracy_evaluator.evaluate_recall(),
+                    'Loss:', train_loss.item()
+                )
 
     def test(self, X):
         # do the testing, and result the result
