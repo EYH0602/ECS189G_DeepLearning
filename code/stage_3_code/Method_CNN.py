@@ -6,7 +6,7 @@ Concrete MethodModule class for a specific learning MethodModule
 # License: TBD
 
 from code.base_class.method import method
-from code.stage_2_code.Evaluate_Accuracy import EvaluateAccuracy
+from code.stage_3_code.Evaluate_Accuracy import EvaluateAccuracy
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -32,13 +32,13 @@ class MethodCNN(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
 
-        self.conv1 = nn.Conv2d(1, 6, 5)
-        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.conv1 = nn.Conv2d(1, 6, 5).cuda()
+        self.conv2 = nn.Conv2d(6, 16, 5).cuda()
 
-        self.fc_layer_1 = nn.Linear(16 * 4 * 4, 120)
+        self.fc_layer_1 = nn.Linear(16 * 4 * 4, 120).cuda()
         self.activation_func_1 = nn.ReLU()
 
-        self.fc_layer_2 = nn.Linear(120, 10)
+        self.fc_layer_2 = nn.Linear(120, 10).cuda()
         self.activation_func_2 = nn.Softmax(dim=1)
 
     # it defines the forward propagation function for input x
@@ -47,12 +47,12 @@ class MethodCNN(method, nn.Module):
     def forward(self, x):
         """Forward propagation"""
         # CNN  layers
-        h = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        h = F.max_pool2d(F.relu(self.conv2(h)), 2)
+        h = F.max_pool2d(F.relu(self.conv1(x)), (2, 2)).cuda()
+        h = F.max_pool2d(F.relu(self.conv2(h)), 2).cuda()
 
         # FC layers
         h = torch.flatten(h)
-        h = self.activation_func_1(self.fc_layer_1(h))
+        h = self.activation_func_1(self.fc_layer_1(h)).cuda()
         y_pred = self.fc_layer_2(h)
         return y_pred
 
@@ -90,12 +90,12 @@ class MethodCNN(method, nn.Module):
                 X_train = torch.FloatTensor(
                     np.array(X)).unsqueeze(0).unsqueeze(0)
 
-                # X_train.to(device)  # use cuda if available
+                X_train = X_train.to(device)  # use cuda if available
                 y_pred.append(self.forward(X_train))
 
             # convert y to torch.tensor as well
-            y_true = torch.LongTensor(np.array(y_true))
-            y_pred = self.activation_func_2(torch.stack(y_pred))
+            y_true = torch.LongTensor(np.array(y_true)).to(device)
+            y_pred = self.activation_func_2(torch.stack(y_pred).to(device))
 
             # calculate the training loss
             train_loss = loss_function(y_pred, y_true)
@@ -105,8 +105,8 @@ class MethodCNN(method, nn.Module):
 
             if epoch % 100 == 0:
                 accuracy_evaluator.data = {
-                    'true_y': y_true,
-                    'pred_y': y_pred.max(1)[1]
+                    'true_y': y_true.cpu(),
+                    'pred_y': y_pred.max(1)[1].cpu()
                 }
                 print(
                     'Epoch:', epoch,
