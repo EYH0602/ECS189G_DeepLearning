@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     method_obj = MethodCNN('Convolutional Neural Network', '')
 
-    result_obj = ResultSaver('saver', '')
+    result_obj = ResultSaver('saver', 'MNIST')
     result_obj.result_destination_folder_path = '../../result/stage_3_result/CNN_'
     result_obj.result_destination_file_name = 'prediction_result'
 
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     setting_obj.print_setup_summary()
     mean_score, std_score = setting_obj.load_run_save_evaluate()
     print('************ Overall Performance ************')
-    print('MLP Accuracy: ' + str(mean_score) + ' +/- ' + str(std_score))
+    print('CNN Accuracy: ' + str(mean_score) + ' +/- ' + str(std_score))
     print('************ Finish ************')
     # ------------------------------------------------------
     

@@ -19,9 +19,9 @@ print("training on: " + device.type)
 class MethodCNN(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 500
+    max_epoch = 300
     # it defines the learning rate for gradient descent based optimizer for model learning
-    learning_rate = 1e-4
+    learning_rate = 1e-3
     plotter = None
 
     # it defines the MLP model architecture, e.g.,
@@ -32,14 +32,20 @@ class MethodCNN(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
 
-        self.conv1 = nn.Conv2d(1, 6, 5).cuda()
-        self.conv2 = nn.Conv2d(6, 16, 5).cuda()
-
-        self.fc_layer_1 = nn.Linear(16 * 4 * 4, 120).cuda()
+        self.conv1 = nn.Conv2d(1, 6, 5)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        
+        self.fc_layer_1 = nn.Linear(16 * 4 * 4, 120)
         self.activation_func_1 = nn.ReLU()
 
-        self.fc_layer_2 = nn.Linear(120, 10).cuda()
+        self.fc_layer_2 = nn.Linear(120, 10)
         self.activation_func_2 = nn.Softmax(dim=1)
+        
+        if torch.cuda.is_available():
+            self.conv1 = self.conv1.cuda()
+            self.conv2 = self.conv2.cuda()
+            self.fc_layer_1 = self.fc_layer_1.cuda()
+            self.fc_layer_2 = self.fc_layer_2.cuda()
 
     # it defines the forward propagation function for input x
     # this function will calculate the output layer by layer
@@ -47,12 +53,16 @@ class MethodCNN(method, nn.Module):
     def forward(self, x):
         """Forward propagation"""
         # CNN  layers
-        h = F.max_pool2d(F.relu(self.conv1(x)), (2, 2)).cuda()
-        h = F.max_pool2d(F.relu(self.conv2(h)), 2).cuda()
+        if torch.cuda.is_available():
+            h = F.max_pool2d(F.relu(self.conv1(x)), (2, 2)).cuda()
+            h = F.max_pool2d(F.relu(self.conv2(h)), 2).cuda()
+        else:
+            h = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
+            h = F.max_pool2d(F.relu(self.conv2(h)), 2)
 
         # FC layers
         h = torch.flatten(h)
-        h = self.activation_func_1(self.fc_layer_1(h)).cuda()
+        h = self.activation_func_1(self.fc_layer_1(h))
         y_pred = self.fc_layer_2(h)
         return y_pred
 
