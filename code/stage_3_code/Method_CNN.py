@@ -21,7 +21,7 @@ class Method_CNN(method, nn.Module):
 
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 230
+    max_epoch = 50
     except_accuracy = 0.995
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-4
@@ -79,9 +79,9 @@ class Method_CNN(method, nn.Module):
             shuffle(train_data)
             mini_batches = []
 
-            for i in range(0, len(train_data) // 256 - 1):
-                start_index = i * 256
-                mini_batch = train_data[start_index:start_index+255]
+            for i in range(0, len(train_data) // batch_size - 1):
+                start_index = i * batch_size
+                mini_batch = train_data[start_index:start_index + batch_size - 1]
                 if len(mini_batch) == 0:
                     break
                 mini_batches.append({'X': [pair['image'] for pair in mini_batch], 'y': [pair['label'] for pair in mini_batch]})
