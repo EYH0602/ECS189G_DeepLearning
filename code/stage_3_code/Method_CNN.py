@@ -21,7 +21,7 @@ class Method_CNN(method, nn.Module):
 
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 50
+    max_epoch = 1
     except_accuracy = 0.995
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-4
@@ -130,15 +130,18 @@ class Method_CNN(method, nn.Module):
 
     def test(self, X):
         # do the testing, and result the result
-        y_pred = self.forward(torch.FloatTensor(np.array(X)))
+        y_pred = self.forward(X)
         # convert the probability distributions to the corresponding labels
         # instances will get the labels corresponding to the largest probability
-        return y_pred.max(1)[1]
+        return y_pred
 
     def run(self):
         print('method running...')
         print('--start training...')
         self.train(self.data['train'])
         print('--start testing...')
-        pred_y = self.test(self.data['test']['X'])
-        return {'pred_y': pred_y, 'true_y': self.data['test']['y']}
+        y_pred = []
+        for test_data in self.data['test']['X']:
+            X = torch.FloatTensor(np.array(test_data)).permute(2, 0, 1).unsqueeze(0)
+            y_pred.append(self.test(X))
+        return {'pred_y': self.activation_func_2(torch.stack(y_pred)).max(1)[1], 'true_y': self.data['test']['y']}
