@@ -17,11 +17,11 @@ if __name__ == '__main__':
     # ---- objection initialization section ---------------
     data_obj = DatasetLoader('stage 3', '')
     data_obj.dataset_source_folder_path = '../../data/stage_3_data/'
-    data_obj.dataset_source_file_name = 'MNIST'
+    data_obj.dataset_source_file_name = 'ORL'
 
     method_obj = MethodCNN('Convolutional Neural Network', '')
 
-    result_obj = ResultSaver('saver', 'MNIST')
+    result_obj = ResultSaver('saver', 'ORL')
     result_obj.result_destination_folder_path = '../../result/stage_3_result/CNN_'
     result_obj.result_destination_file_name = 'prediction_result'
 

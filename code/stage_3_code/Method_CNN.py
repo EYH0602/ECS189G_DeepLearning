@@ -19,9 +19,9 @@ print("training on: " + device.type)
 class MethodCNN(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 300
+    max_epoch = 2000
     # it defines the learning rate for gradient descent based optimizer for model learning
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     plotter = None
 
     # it defines the MLP model architecture, e.g.,
@@ -32,15 +32,15 @@ class MethodCNN(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
 
-        self.conv1 = nn.Conv2d(1, 6, 5)
+        self.conv1 = nn.Conv2d(3, 6, 5)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        
-        self.fc_layer_1 = nn.Linear(16 * 4 * 4, 120)
+
+        self.fc_layer_1 = nn.Linear(16 * 25 * 20, 120)
         self.activation_func_1 = nn.ReLU()
 
-        self.fc_layer_2 = nn.Linear(120, 10)
+        self.fc_layer_2 = nn.Linear(120, 41)
         self.activation_func_2 = nn.Softmax(dim=1)
-        
+
         if torch.cuda.is_available():
             self.conv1 = self.conv1.cuda()
             self.conv2 = self.conv2.cuda()
@@ -86,7 +86,6 @@ class MethodCNN(method, nn.Module):
 
             y_true = []
             y_pred = []
-            print(epoch)
 
             # gradient optimizer need to be clear every epoch
             optimizer.zero_grad()
@@ -97,9 +96,10 @@ class MethodCNN(method, nn.Module):
 
                 # add dimension to input
                 # 28 x 28 -> 1 x 1 x 28 x 28
-                X_train = torch.FloatTensor(
-                    np.array(X)).unsqueeze(0).unsqueeze(0)
-
+                X_train = torch.FloatTensor(np.array(X))\
+                    .unsqueeze(0)\
+                    .permute((0, 3, 1, 2))
+                
                 X_train = X_train.to(device)  # use cuda if available
                 y_pred.append(self.forward(X_train))
 
@@ -150,7 +150,7 @@ class MethodCNN(method, nn.Module):
 
         for test_data in self.data['test']:
             X = torch.FloatTensor(np.array(test_data['image']))
-            X = X.unsqueeze(0).unsqueeze(0)
+            X = X.unsqueeze(0).permute((0, 3, 1, 2))
             y_true.append(test_data['label'])
             y_pred.append(self.test(X))
 
