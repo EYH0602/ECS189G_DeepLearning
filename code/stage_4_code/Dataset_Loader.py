@@ -50,3 +50,4 @@ class DatasetLoader(dataset):
         words = [word for word in stripped if word.isalpha()]
         stop_words = set(stopwords.words('english'))
         return [word for word in words if (word not in stop_words)]
+
