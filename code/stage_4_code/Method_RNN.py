@@ -13,6 +13,8 @@ from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 class MethodRNN(method, nn.Module):
     data = None
@@ -30,9 +32,9 @@ class MethodRNN(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
         
-        self.encoder = nn.Embedding(1002, 100)
-        self.lstm = nn.LSTM(100, 50)
-        self.fc = nn.Linear(50, 2)
+        self.encoder = nn.Embedding(100000, 1000)
+        self.lstm = nn.LSTM(1000, 500)
+        self.fc = nn.Linear(500, 2)
         self.activation = nn.Sigmoid()
 
     def forward(self, x, lengths):
@@ -62,7 +64,7 @@ class MethodRNN(method, nn.Module):
         if not self.word_dict:
             raise RuntimeWarning("Word Dictionary not defined.")
         
-        X = list(map(self.word_dict.sentence_to_indexes(100), X))
+        X = list(map(self.word_dict.sentence_to_indexes(1000), X))
         train_len = torch.tensor(list(map(len, X)))
         
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
@@ -82,10 +84,10 @@ class MethodRNN(method, nn.Module):
             optimizer.zero_grad()
             y_true = []
 
-            X_train = torch.tensor(np.array(X))
+            X_train = torch.tensor(np.array(X)).to(device)
             y_pred = self.forward(X_train, train_len)
             
-            y_true = torch.tensor(np.array(y))
+            y_true = torch.tensor(np.array(y)).to(device)
 
             # calculate the training loss
             train_loss = loss_function(y_pred, y_true)
@@ -95,8 +97,8 @@ class MethodRNN(method, nn.Module):
 
             if epoch % 100 == 0:
                 accuracy_evaluator.data = {
-                    'true_y': y_true,
-                    'pred_y': y_pred.max(1)[1]
+                    'true_y': y_true.cpu(),
+                    'pred_y': y_pred.cpu().max(1)[1]
                 }
                 print(
                     'Epoch:', epoch,
@@ -114,12 +116,13 @@ class MethodRNN(method, nn.Module):
 
     def test(self, X):
         # do the testing, and result the result
-        X = list(map(self.word_dict.sentence_to_indexes(100), X))
+        X = list(map(self.word_dict.sentence_to_indexes(1000), X))
         test_len = torch.tensor(list(map(len, X)))
-        y_pred = self.forward(torch.tensor(np.array(X)), test_len)
+        X = torch.tensor(np.array(X)).to(device)
+        y_pred = self.forward(X, test_len)
         # convert the probability distributions to the corresponding labels
         # instances will get the labels corresponding to the largest probability
-        return y_pred.max(1)[1]
+        return y_pred.cpu().max(1)[1]
 
     def run(self):
         print('method running...')

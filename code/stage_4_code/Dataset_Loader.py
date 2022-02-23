@@ -58,10 +58,15 @@ class DatasetLoader(dataset):
         else:
             dataset_label = 'neg/'
         source_path = folder_path + dataset_name + dataset_label
-        
+
+        i = 0 
         for file in os.listdir(source_path):
+            if i >= 500:
+                break
             data['X'].append(self.tokenize(open(source_path + file, "r", encoding='utf-8').read()))
             data['y'].append(label)
+            i += 1
+        
 
         return data
 

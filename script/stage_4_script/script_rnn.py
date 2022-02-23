@@ -17,8 +17,11 @@ if 1:
     # ---- objection initialization section ---------------
     data_obj = DatasetLoader('stage 4', '')
     data_obj.dataset_source_folder_path = '../../data/stage_4_data/text_classification/'
-    
     method_obj = MethodRNN('RNN', '')
+
+    if torch.cuda.is_available():
+        print("training on: cuda")
+        method_obj = method_obj.cuda()
 
     result_obj = ResultSaver('saver', '')
     result_obj.result_destination_folder_path = '../../result/stage_4_result/RNN_'
