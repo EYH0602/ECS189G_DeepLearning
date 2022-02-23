@@ -28,13 +28,14 @@ class MethodRNN(method, nn.Module):
     # it defines the MLP model architecture, e.g.,
     # how many layers, size of variables in each layer, activation function, etc.
     # the size of the input/output portal of the model architecture should be consistent with our data input and desired output
-    def __init__(self, mName, mDescription):
+    def __init__(self, mName, mDescription, embedding_dim):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
+        self.embedding_dim = embedding_dim
         
-        self.encoder = nn.Embedding(100000, 1000)
-        self.lstm = nn.LSTM(1000, 500)
-        self.fc = nn.Linear(500, 2)
+        self.encoder = nn.Embedding(2000, self.embedding_dim)
+        self.lstm = nn.LSTM(self.embedding_dim, 50)
+        self.fc = nn.Linear(50, 2)
         self.activation = nn.Sigmoid()
 
     def forward(self, x, lengths):
@@ -64,8 +65,11 @@ class MethodRNN(method, nn.Module):
         if not self.word_dict:
             raise RuntimeWarning("Word Dictionary not defined.")
         
-        X = list(map(self.word_dict.sentence_to_indexes(1000), X))
+        X = list(map(self.word_dict.sentence_to_indexes(self.embedding_dim), X))
         train_len = torch.tensor(list(map(len, X)))
+        
+        X_train = torch.tensor(np.array(X)).to(device)
+        y_true = torch.tensor(np.array(y)).to(device)
         
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -82,12 +86,8 @@ class MethodRNN(method, nn.Module):
 
             # gradient optimizer need to be clear every epoch
             optimizer.zero_grad()
-            y_true = []
 
-            X_train = torch.tensor(np.array(X)).to(device)
             y_pred = self.forward(X_train, train_len)
-            
-            y_true = torch.tensor(np.array(y)).to(device)
 
             # calculate the training loss
             train_loss = loss_function(y_pred, y_true)
@@ -116,7 +116,7 @@ class MethodRNN(method, nn.Module):
 
     def test(self, X):
         # do the testing, and result the result
-        X = list(map(self.word_dict.sentence_to_indexes(1000), X))
+        X = list(map(self.word_dict.sentence_to_indexes(self.embedding_dim), X))
         test_len = torch.tensor(list(map(len, X)))
         X = torch.tensor(np.array(X)).to(device)
         y_pred = self.forward(X, test_len)

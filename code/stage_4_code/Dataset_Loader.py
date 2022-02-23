@@ -17,8 +17,9 @@ class DatasetLoader(dataset):
     data = None
     dataset_source_folder_path = None
 
-    def __init__(self, dName=None, dDescription=None):
+    def __init__(self, dName=None, dDescription=None, n_file=400,):
         super().__init__(dName, dDescription)
+        self.n_file = n_file
 
     def load(self):
         train_pos = self.load_individual(
@@ -61,7 +62,7 @@ class DatasetLoader(dataset):
 
         i = 0 
         for file in os.listdir(source_path):
-            if i >= 500:
+            if i >= self.n_file:
                 break
             data['X'].append(self.tokenize(open(source_path + file, "r", encoding='utf-8').read()))
             data['y'].append(label)

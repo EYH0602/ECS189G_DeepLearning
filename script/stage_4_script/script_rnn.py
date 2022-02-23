@@ -15,9 +15,10 @@ if 1:
     #------------------------------------------------------
 
     # ---- objection initialization section ---------------
-    data_obj = DatasetLoader('stage 4', '')
+    number_file = 50
+    data_obj = DatasetLoader('stage 4', '', number_file)
     data_obj.dataset_source_folder_path = '../../data/stage_4_data/text_classification/'
-    method_obj = MethodRNN('RNN', '')
+    method_obj = MethodRNN('RNN', '', number_file * 2)
 
     if torch.cuda.is_available():
         print("training on: cuda")
