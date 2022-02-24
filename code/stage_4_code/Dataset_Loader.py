@@ -17,7 +17,7 @@ class DatasetLoader(dataset):
     data = None
     dataset_source_folder_path = None
 
-    def __init__(self, dName=None, dDescription=None, n_file=400,):
+    def __init__(self, dName=None, dDescription=None, n_file=500,):
         super().__init__(dName, dDescription)
         self.n_file = n_file
 

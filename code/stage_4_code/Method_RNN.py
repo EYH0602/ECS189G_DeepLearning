@@ -12,6 +12,7 @@ import torch
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
+from sklearn.utils import shuffle
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -19,9 +20,10 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class MethodRNN(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 1000
+    max_epoch = 1
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-4
+    batch_size = 100
     plotter = None
     word_dict: Dictionary = None
 
@@ -32,10 +34,11 @@ class MethodRNN(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
         self.embedding_dim = embedding_dim
-        
+
+        # dimension, number of embedding
         self.encoder = nn.Embedding(2000, self.embedding_dim)
-        self.lstm = nn.LSTM(self.embedding_dim, 50)
-        self.fc = nn.Linear(50, 2)
+        self.lstm = nn.LSTM(self.embedding_dim, self.embedding_dim // 2)
+        self.fc = nn.Linear(self.embedding_dim // 2, 2)
         self.activation = nn.Sigmoid()
 
     def forward(self, x, lengths):
@@ -65,12 +68,6 @@ class MethodRNN(method, nn.Module):
         if not self.word_dict:
             raise RuntimeWarning("Word Dictionary not defined.")
         
-        X = list(map(self.word_dict.sentence_to_indexes(self.embedding_dim), X))
-        train_len = torch.tensor(list(map(len, X)))
-        
-        X_train = torch.tensor(np.array(X)).to(device)
-        y_true = torch.tensor(np.array(y)).to(device)
-        
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         # check here for the nn.CrossEntropyLoss doc: https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
@@ -83,39 +80,70 @@ class MethodRNN(method, nn.Module):
         # you can try to split X and y into smaller-sized batches by yourself
         # you can do an early stop if self.max_epoch is too much...
         for epoch in range(self.max_epoch):
+            accuracy = 0
+            precision = 0
+            recall = 0
+            f1 = 0
+            loss = 0
 
-            # gradient optimizer need to be clear every epoch
-            optimizer.zero_grad()
+            shuffle(X, y)
 
-            y_pred = self.forward(X_train, train_len)
+            mini_batches_X = []
+            mini_batches_y = []
 
-            # calculate the training loss
-            train_loss = loss_function(y_pred, y_true)
+            for i in range(0, len(X) // self.batch_size - 1):
+                start_index = i * self.batch_size
+                mini_batch_X = X[start_index:start_index + self.batch_size]
+                mini_batch_y = y[start_index:start_index + self.batch_size]
+                if len(mini_batch_X) == 0:
+                    break
+                mini_batches_X.append(mini_batch_X)
+                mini_batches_y.append(mini_batch_y)
 
-            train_loss.backward()
-            optimizer.step()
+            for (i, mini_batch_X) in enumerate(mini_batches_X):
+                optimizer.zero_grad()
+                mini_batch_X = list(map(self.word_dict.sentence_to_indexes(self.embedding_dim), mini_batch_X))
+                train_len = torch.tensor(list(map(len, mini_batch_X)))
+                X_train = torch.tensor(np.array(mini_batch_X)).to(device)
+                y_true = torch.LongTensor(np.array(mini_batches_y[i]))
+                y_pred = self.forward(X_train, train_len)
+                # calculate the training loss
+                train_loss = loss_function(y_pred, y_true)
 
-            if epoch % 100 == 0:
+                train_loss.backward()
+                optimizer.step()
                 accuracy_evaluator.data = {
                     'true_y': y_true.cpu(),
                     'pred_y': y_pred.cpu().max(1)[1]
                 }
-                print(
-                    'Epoch:', epoch,
-                    'Accuracy:', accuracy_evaluator.evaluate_accuracy(),
-                    'Precision', accuracy_evaluator.evaluate_precision(),
-                    'Recall', accuracy_evaluator.evaluate_recall(),
-                    'F1', accuracy_evaluator.evaluate_f1(),
-                    'Loss:', train_loss.item()
-                )
+                if i == len(mini_batches_X) - 1:
+                    accuracy = accuracy_evaluator.evaluate_accuracy()
+                    precision = accuracy_evaluator.evaluate_precision()
+                    recall = accuracy_evaluator.evaluate_recall()
+                    f1 = accuracy_evaluator.evaluate_f1()
+                    loss = train_loss.item()
+
+            if epoch % 1 == 0:
+                print('------------------------------------------------------------')
+                print('Epoch:', epoch)
+                print('evaluating accuracy performance...')
+                print('Accuracy:', accuracy)
+                print('evaluating precision performance...')
+                print('Precision', precision)
+                print('evaluating recall performance...')
+                print('Recall', recall)
+                print('evaluating f1 performance...')
+                print('F1', f1)
+                print('Loss:', loss)
+                print('------------------------------------------------------------')
                 
                 # add to graph if avaliable
                 if self.plotter:
                     self.plotter.xs.append(epoch)
-                    self.plotter.ys.append(train_loss.item())
+                    self.plotter.ys.append(loss)
 
     def test(self, X):
-        # do the testing, and result the result
+        # do the testing, and get the result
         X = list(map(self.word_dict.sentence_to_indexes(self.embedding_dim), X))
         test_len = torch.tensor(list(map(len, X)))
         X = torch.tensor(np.array(X)).to(device)
