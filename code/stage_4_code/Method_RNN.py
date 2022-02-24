@@ -106,8 +106,8 @@ class MethodRNN(method, nn.Module):
                 mini_batch_X = list(map(self.word_dict.sentence_to_indexes(self.batch_size), mini_batch_X))
                 train_len = torch.tensor(list(map(len, mini_batch_X)))
                 X_train = torch.tensor(np.array(mini_batch_X)).to(device)
-                y_true = torch.LongTensor(np.array(mini_batches_y[i]))
-                y_pred = self.forward(X_train, train_len)
+                y_true = torch.LongTensor(np.array(mini_batches_y[i])).to(device)
+                y_pred = self.forward(X_train, train_len).to(device)
                 # calculate the training loss
                 train_loss = loss_function(y_pred, y_true)
 
