@@ -18,7 +18,7 @@ class Dictionary():
         self.frequencies = sorted(self.frequencies.items(), key=lambda x: x[1], reverse=True)
         for word, freq in self.frequencies:
             self.dictionary[word] = len(self.dictionary)
-            if len(self.dictionary) == max_size + 2:
+            if len(self.dictionary) == max_size - 2:
                 break
         self.inverse_dictionary = dict((v, k) for k, v in self.dictionary.items())
 
