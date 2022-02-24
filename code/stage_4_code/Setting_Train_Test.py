@@ -26,7 +26,7 @@ class SettingTrainTest(setting):
         dic = Dictionary()
         for sec in loaded_data['train']['X']:
             dic.update_frequencies_by_sentence(sec)
-        dic.compute_dictionary(1000)
+        dic.compute_dictionary(2000)
         self.method.word_dict = dic
         
         learned_result = self.method.run()
