@@ -29,12 +29,13 @@ class SettingTrainTest(setting):
         dic.compute_dictionary(2000)
         self.method.word_dict = dic
         
-        learned_result = self.method.run()
+        tested_result = self.method.run()
 
         # save raw ResultModule
-        self.result.data = learned_result
-        self.result.save()
+        # self.result.data = learned_result
+        # self.result.save()
 
-        self.evaluate.data = learned_result
+        # self.evaluate.data = learned_result
 
-        return self.evaluate.evaluate_accuracy(), None
+        # return self.evaluate.evaluate_accuracy(), None
+        return tested_result

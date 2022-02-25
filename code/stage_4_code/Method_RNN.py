@@ -21,7 +21,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class MethodRNN(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 10
+    max_epoch = 25
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-4
     # no larger than 100!!!!!!!!!!!!!!!!
@@ -88,18 +88,7 @@ class MethodRNN(method, nn.Module):
             loss = 0
 
             shuffle(X, y)
-
-            mini_batches_X = []
-            mini_batches_y = []
-
-            for i in range(0, len(X) // self.batch_size):
-                start_index = i * self.batch_size
-                mini_batch_X = X[start_index:start_index + self.batch_size]
-                mini_batch_y = y[start_index:start_index + self.batch_size]
-                if len(mini_batch_X) == 0:
-                    break
-                mini_batches_X.append(mini_batch_X)
-                mini_batches_y.append(mini_batch_y)
+            mini_batches_X, mini_batches_y = self.split_mini_batch(X, y)
 
             for (i, mini_batch_X) in enumerate(mini_batches_X):
                 optimizer.zero_grad()
@@ -143,24 +132,35 @@ class MethodRNN(method, nn.Module):
                     self.plotter.xs.append(epoch)
                     self.plotter.ys.append(loss)
 
-    def test(self, X):
-        mini_batches_X = []
-        for i in range(0, len(X) // self.batch_size):
-            start_index = i * self.batch_size
-            mini_batch_X = X[start_index:start_index + self.batch_size]
-            if len(mini_batch_X) < self.batch_size:
-                break
-            mini_batches_X.append(mini_batch_X)
-        y_pred = None
+    def test(self, X, y):
+        accuracy_evaluator = EvaluateAccuracy('training evaluator', '')
+        acc_scores = []
+        mini_batches_X, mini_batches_y = self.split_mini_batch(X, y)
         for i, mini_batch_X in enumerate(mini_batches_X):
             mini_batch_X = list(map(self.word_dict.sentence_to_indexes(self.batch_size), mini_batch_X))
             test_len = torch.tensor(list(map(len, mini_batch_X)))
             mini_batch_X = torch.tensor(np.array(mini_batch_X)).to(device)
-            if i == 0:
-                y_pred = self.forward(mini_batch_X, test_len)
-            else:
-                y_pred = torch.cat((y_pred, self.forward(mini_batch_X, test_len)), 0)
-        return y_pred.cpu().max(1)[1]
+            y_pred = self.forward(mini_batch_X, test_len)
+            y_true = torch.LongTensor(np.array(mini_batches_y[i])).to(device)
+            accuracy_evaluator.data = {
+                'true_y': y_true.cpu(),
+                'pred_y': y_pred.cpu().max(1)[1]
+            }
+            acc_scores.append(accuracy_evaluator.evaluate_accuracy())
+        return np.mean(acc_scores), np.std(acc_scores)
+    
+    def split_mini_batch(self, X, y):
+        mini_batches_X, mini_batches_y = [], []
+        for i in range(0, len(X) // self.batch_size):
+            start_index = i * self.batch_size
+            mini_batch_X = X[start_index:start_index + self.batch_size]
+            mini_batch_y = y[start_index:start_index + self.batch_size]
+            if len(mini_batch_X) == 0:
+                break
+            mini_batches_X.append(mini_batch_X)
+            mini_batches_y.append(mini_batch_y)
+
+        return mini_batches_X, mini_batches_y
 
     def run(self):
         print('method running...')
@@ -168,5 +168,6 @@ class MethodRNN(method, nn.Module):
         
         self.train(self.data['train']['X'], self.data['train']['y'])
         print('--start testing...')
-        pred_y = self.test(self.data['test']['X'])
-        return {'pred_y': pred_y, 'true_y': self.data['test']['y']}
+        test_result = self.test(self.data['test']['X'], self.data['test']['y'])
+        return test_result
+        # return {'pred_y': pred_y, 'true_y': self.data['test']['y']}
