@@ -16,18 +16,12 @@ class SettingTrainTest(setting):
 
     def load_run_save_evaluate(self):
         # load dataset
-        loaded_data = self.dataset.load()
+        # loaded_data = self.dataset.load()
 
         # run MethodModule
         # self.method.data = {'train': {'X': X_train, 'y': y_train}, 'test': {'X': X_test, 'y': y_test}}
-        self.method.data = loaded_data
+        # self.method.data = loaded_data
         self.method.plotter = self.plotter
-        
-        dic = Dictionary()
-        for sec in loaded_data['train']['X']:
-            dic.update_frequencies_by_sentence(sec)
-        dic.compute_dictionary(2000)
-        self.method.word_dict = dic
         
         learned_result = self.method.run()
 

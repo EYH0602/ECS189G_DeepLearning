@@ -156,3 +156,5 @@ cython_debug/
 
 # VS Code
 .vscode
+
+.vector_cache

@@ -15,10 +15,24 @@ if 1:
     #------------------------------------------------------
 
     # ---- objection initialization section ---------------
-    number_file = 500
-    data_obj = DatasetLoader('stage 4', '', number_file)
+    data_obj = DatasetLoader('stage 4', '')
     data_obj.dataset_source_folder_path = '../../data/stage_4_data/text_classification/'
-    method_obj = MethodRNN('RNN', '', 2 * number_file)
+    data_obj.train_datafile_path = 'train_data.txt'
+    data_obj.test_datafile_path = 'test_data.txt'
+    data = data_obj.load()
+    
+    # some hyper-parameters to tune
+    INPUT_DIM = len(data_obj.TEXT.vocab)
+    EMBEDDING_DIM = 100
+    HIDDEN_DIM = 256
+    OUTPUT_DIM = 1
+    N_LAYERS = 2
+    BIDIRECTIONAL = True
+    DROPOUT = 0.5
+    PAD_IDX = data_obj.TEXT.vocab.stoi[data_obj.TEXT.pad_token]
+    UNK_IDX = data_obj.TEXT.vocab.stoi[data_obj.TEXT.unk_token]
+    method_obj = MethodRNN('RNN', '', INPUT_DIM, EMBEDDING_DIM, HIDDEN_DIM, N_LAYERS, BIDIRECTIONAL, DROPOUT, PAD_IDX, UNK_IDX)
+    method_obj.data = data
 
     if torch.cuda.is_available():
         print("training on: cuda")
