@@ -31,7 +31,7 @@ if 1:
     DROPOUT = 0.5
     PAD_IDX = data_obj.TEXT.vocab.stoi[data_obj.TEXT.pad_token]
     UNK_IDX = data_obj.TEXT.vocab.stoi[data_obj.TEXT.unk_token]
-    method_obj = MethodRNN('RNN', '', INPUT_DIM, EMBEDDING_DIM, HIDDEN_DIM, N_LAYERS, BIDIRECTIONAL, DROPOUT, PAD_IDX, UNK_IDX)
+    method_obj = MethodRNN('RNN', '', INPUT_DIM, EMBEDDING_DIM, HIDDEN_DIM, N_LAYERS, BIDIRECTIONAL, DROPOUT, data_obj.TEXT)
     method_obj.data = data
 
     if torch.cuda.is_available():

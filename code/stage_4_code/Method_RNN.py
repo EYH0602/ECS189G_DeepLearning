@@ -21,10 +21,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class MethodRNN(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 1
+    max_epoch = 30
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-4
-    # no larger than 100!!!!!!!!!!!!!!!!
     plotter = None
 
     # it defines the MLP model architecture, e.g.,
@@ -32,9 +31,12 @@ class MethodRNN(method, nn.Module):
     # the size of the input/output portal of the model architecture should be consistent with our data input and desired output
     def __init__(self, mName, mDescription,
                 vocab_size, embedding_dim, hidden_dim, n_layers,
-                bidirec, dropout, pad_idx, unk_idx):
+                bidirec, dropout, TEXT):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
+        
+        pad_idx = TEXT.vocab.stoi[TEXT.pad_token]
+        unk_idx = TEXT.vocab.stoi[TEXT.unk_token]
 
         # dimension, number of embedding
         self.encoder = nn.Embedding(vocab_size, embedding_dim, padding_idx=pad_idx)
@@ -49,6 +51,8 @@ class MethodRNN(method, nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.activ = nn.Sigmoid()
         
+        pretrained_embeddings = TEXT.vocab.vectors
+        self.encoder.weight.data.copy_(pretrained_embeddings)
         self.encoder.weight.data[pad_idx] = torch.zeros(embedding_dim)
         self.encoder.weight.data[unk_idx] = torch.zeros(embedding_dim)
 
@@ -59,12 +63,12 @@ class MethodRNN(method, nn.Module):
         embedded = self.dropout(embedded)
         
         packed_embedded = pack_padded_sequence(embedded, lengths)
-        packed_out, (hidden, _) = self.lstm(packed_embedded)
+        packed_out, (hidden, cell) = self.lstm(packed_embedded)
 
         out, out_lengths = pad_packed_sequence(packed_out)
         hidden = self.dropout(torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim = 1))
         
-        y_pred = torch.round(self.activ(self.fc(hidden)))
+        y_pred = self.fc(hidden)
         return y_pred
 
     # backward error propagation will be implemented by pytorch automatically
@@ -91,12 +95,14 @@ class MethodRNN(method, nn.Module):
                 y_pred = self.forward(X_train, train_len.cpu()).squeeze(1)
                 # calculate the training loss
                 train_loss = loss_function(y_pred, y_true)
+                
+                y_pred =  torch.round(self.activ(y_pred))
 
                 train_loss.backward()
                 optimizer.step()
                 
                 accuracy_evaluator.data = {
-                    'true_y': y_true.cpu().detach().numpy(),
+                    'true_y': y_true.cpu(),
                     'pred_y': y_pred.cpu().detach().numpy()
                 }
                 loss_acc += np.array([
@@ -107,7 +113,7 @@ class MethodRNN(method, nn.Module):
                     accuracy_evaluator.evaluate_f1()
                 ])
 
-            loss_acc = loss_acc / len(batch) 
+            loss_acc = loss_acc / len(batches) 
             print('------------------------------------------------------------')
             print('Epoch:', epoch)
             print('evaluating accuracy performance...')
@@ -132,7 +138,7 @@ class MethodRNN(method, nn.Module):
 
         for batch in batches:
             X_test, test_len = batch.text
-            y_pred = self.forward(X_test, test_len.cpu())
+            y_pred = torch.round(self.activ(self.forward(X_test, test_len.cpu())))
             y_true = batch.label
             accuracy_evaluator.data = {
                 'true_y': y_true.cpu(),
