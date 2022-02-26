@@ -23,12 +23,13 @@ class SettingTrainTest(setting):
         # self.method.data = loaded_data
         self.method.plotter = self.plotter
         
-        learned_result = self.method.run()
+        result = self.method.run()
 
         # save raw ResultModule
-        self.result.data = learned_result
-        self.result.save()
+        # self.result.data = learned_result
+        # self.result.save()
 
-        self.evaluate.data = learned_result
+        # self.evaluate.data = learned_result
 
-        return self.evaluate.evaluate_accuracy(), None
+        # self.evaluate.evaluate_accuracy(), None
+        return result

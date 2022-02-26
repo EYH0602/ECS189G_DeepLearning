@@ -21,7 +21,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class MethodRNN(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 10
+    max_epoch = 1
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-4
     # no larger than 100!!!!!!!!!!!!!!!!
@@ -47,7 +47,7 @@ class MethodRNN(method, nn.Module):
         )
         self.fc = nn.Linear(hidden_dim * 2, 1)
         self.dropout = nn.Dropout(dropout)
-        self.activ = nn.Softmax(dim=1)
+        self.activ = nn.Sigmoid()
         
         self.encoder.weight.data[pad_idx] = torch.zeros(embedding_dim)
         self.encoder.weight.data[unk_idx] = torch.zeros(embedding_dim)
@@ -64,7 +64,7 @@ class MethodRNN(method, nn.Module):
         out, out_lengths = pad_packed_sequence(packed_out)
         hidden = self.dropout(torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim = 1))
         
-        y_pred = self.activ(self.fc(hidden))
+        y_pred = torch.round(self.activ(self.fc(hidden)))
         return y_pred
 
     # backward error propagation will be implemented by pytorch automatically
@@ -124,26 +124,29 @@ class MethodRNN(method, nn.Module):
             # add to graph if avaliable
             if self.plotter:
                 self.plotter.xs.append(epoch)
-                self.plotter.ys.append(loss)
+                self.plotter.ys.append(loss_acc[0])
 
     def test(self, batches):
-        y_pred = None
-        y_true = None
+        accuracy_evaluator = EvaluateAccuracy('training evaluator', '')
+        acc_scores = []
+
         for batch in batches:
             X_test, test_len = batch.text
-            if i == 0:
-                y_pred = self.forward(X_test, test_len)
-                y_true = torch.tensor(batch.label)
-            else:
-                y_pred = torch.cat((y_pred, self.forward(X_test, test_len.cpu())), 0)
-                y_true = torch.cat((y_true, batch.label), 0)
-        return y_true.cpu(), y_pred.cpu()
+            y_pred = self.forward(X_test, test_len.cpu())
+            y_true = batch.label
+            accuracy_evaluator.data = {
+                'true_y': y_true.cpu(),
+                'pred_y': y_pred.cpu().detach().numpy()
+            }
+            acc_scores.append(accuracy_evaluator.evaluate_accuracy())
+        return np.mean(acc_scores), np.std(acc_scores)
 
     def run(self):
         print('method running...')
         print('--start training...')
-        
         self.train(self.data['train'])
+        torch.save(self.state_dict(), 'stage_4_classification.pt')
+
         print('--start testing...')
-        ture_y, pred_y = self.test(self.data['test'])
-        return {'pred_y': pred_y, 'true_y': true_y}
+        test_result = self.test(self.data['test'])
+        return test_result
