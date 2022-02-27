@@ -17,11 +17,15 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class MethodRNN(method, nn.Module):
+    vocab_size = 4727
+    embedding_dim = 200
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 1000
+    max_epoch = 100
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-4
+    sequence_length = 5
+    lstm_size = 200
     plotter = None
     word_dict: Dictionary = None
 
@@ -32,103 +36,90 @@ class MethodRNN(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
         
-        self.encoder = nn.Embedding(100000, 1000)
-        self.lstm = nn.LSTM(1000, 500)
-        self.fc = nn.Linear(500, 2)
-        self.activation = nn.Sigmoid()
+        self.encoder = nn.Embedding(self.vocab_size, self.embedding_dim)
+        self.lstm = nn.LSTM(input_size=self.lstm_size, hidden_size=self.lstm_size, num_layers=1)
+        self.fc = nn.Linear(self.lstm_size, self.vocab_size)
 
-    def forward(self, x, lengths):
+    def forward(self, x, prev):
         """Forward propagation"""
-        
+
         embedded = self.encoder(x)
-        packed_embedded = pack_padded_sequence(embedded, lengths)
-        packed_out, _ = self.lstm(packed_embedded)
-        out, _ = pad_packed_sequence(packed_out)
-        
-        row_indices = torch.arange(0, x.size(0)).long()
-        col_indices = lengths - 1
-        
-        out_tensor = out[row_indices, col_indices, :]
-        
-        y_pred = self.activation(self.fc(out_tensor))
-        return y_pred
+        out, cur = self.lstm(embedded, prev)
+        return self.fc(out), cur
 
     # backward error propagation will be implemented by pytorch automatically
     # so, we don't need to define the error backpropagation function here
 
-    def train(self, X, y):
-        
+    def train(self, jokes):
         # check for plot setting
         if not self.plotter:
             raise RuntimeWarning("Plotter not defined.")
         if not self.word_dict:
             raise RuntimeWarning("Word Dictionary not defined.")
         
-        X = list(map(self.word_dict.sentence_to_indexes(1000), X))
-        train_len = torch.tensor(list(map(len, X)))
+        jokes = list(map(self.word_dict.sentence_to_indexes(200), jokes))
         
         # check here for the torch.optim doc: https://pytorch.org/docs/stable/optim.html
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         # check here for the nn.CrossEntropyLoss doc: https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
         loss_function = nn.CrossEntropyLoss()
-        # for training accuracy investigation purpose
+
         accuracy_evaluator = EvaluateAccuracy('training evaluator', '')
 
-        # it will be an iterative gradient updating process
-        # we don't do mini-batch, we use the whole input as one batch
-        # you can try to split X and y into smaller-sized batches by yourself
-        # you can do an early stop if self.max_epoch is too much...
         for epoch in range(self.max_epoch):
+            cell_state = torch.zeros(1, self.sequence_length, self.lstm_size)
+            hidden_state = torch.zeros(1, self.sequence_length, self.lstm_size)
+            temp_loss = None
+            for batch, X in enumerate(jokes):
+                optimizer.zero_grad()
+                batch_X = []
+                batch_y = []
+                for i in range(0, len(X) // self.sequence_length - 1):
+                    start = i * self.sequence_length
+                    batch_X.append(X[start:start+self.sequence_length])
+                    batch_y.append(X[start+self.sequence_length:start+self.sequence_length+self.sequence_length])
+                X_train = torch.tensor(np.array(batch_X)).to(device)
+                y_pred, (hidden_state, cell_state) = self.forward(X_train, (hidden_state, cell_state))
+                y_true = torch.LongTensor(np.array(batch_y)).to(device)
 
-            # gradient optimizer need to be clear every epoch
-            optimizer.zero_grad()
-            y_true = []
+                train_loss = loss_function(y_pred.transpose(1, 2), y_true)
+                hidden_state = hidden_state.detach()
+                cell_state = cell_state.detach()
 
-            X_train = torch.tensor(np.array(X)).to(device)
-            y_pred = self.forward(X_train, train_len)
-            
-            y_true = torch.tensor(np.array(y)).to(device)
+                train_loss.backward()
+                optimizer.step()
+                print('epoch', epoch, 'batch', batch, 'loss', train_loss.item())
 
-            # calculate the training loss
-            train_loss = loss_function(y_pred, y_true)
+            print('–----------------–-----------------------------------')
 
-            train_loss.backward()
-            optimizer.step()
-
-            if epoch % 100 == 0:
-                accuracy_evaluator.data = {
-                    'true_y': y_true.cpu(),
-                    'pred_y': y_pred.cpu().max(1)[1]
-                }
-                print(
-                    'Epoch:', epoch,
-                    'Accuracy:', accuracy_evaluator.evaluate_accuracy(),
-                    'Precision', accuracy_evaluator.evaluate_precision(),
-                    'Recall', accuracy_evaluator.evaluate_recall(),
-                    'F1', accuracy_evaluator.evaluate_f1(),
-                    'Loss:', train_loss.item()
-                )
-                
-                # add to graph if avaliable
-                if self.plotter:
-                    self.plotter.xs.append(epoch)
-                    self.plotter.ys.append(train_loss.item())
-
-    def test(self, X):
-        # do the testing, and result the result
-        X = list(map(self.word_dict.sentence_to_indexes(1000), X))
-        test_len = torch.tensor(list(map(len, X)))
-        X = torch.tensor(np.array(X)).to(device)
-        y_pred = self.forward(X, test_len)
-        # convert the probability distributions to the corresponding labels
-        # instances will get the labels corresponding to the largest probability
-        return y_pred.cpu().max(1)[1]
+            # add to graph if avaliable
+        if self.plotter:
+            self.plotter.xs.append(epoch)
+            self.plotter.ys.append(train_loss.item())
+    def predict(self, text):
+        words = text.split(' ')
+        cell_state = torch.zeros(1, 3, self.lstm_size)
+        hidden_state = torch.zeros(1, 3, self.lstm_size)
+        count = 0
+        next_word = None
+        while next_word != '.' and count < 100:
+            x = torch.tensor([[self.word_dict.dictionary[w] for w in words[count:]]])
+            y_pred, (hidden_state, cell_state) = self.forward(x, (hidden_state, cell_state))
+            last_word_logits = y_pred[0][-1]
+            p = torch.nn.functional.softmax(last_word_logits, dim=0).detach().numpy()
+            word_index = np.random.choice(len(last_word_logits), p=p)
+            next_word = self.word_dict.inverse_dictionary[word_index]
+            words.append(next_word)
+            count += 1
+        return words
 
     def run(self):
         print('method running...')
         print('--start training...')
-        
-        self.train(self.data['train']['X'], self.data['train']['y'])
-        print('--start testing...')
-        pred_y = self.test(self.data['test']['X'])
-        return {'pred_y': pred_y, 'true_y': self.data['test']['y']}
+
+        self.train(self.data)
+        text = None
+        while text != 'stop':
+            text = input('enter three words separated by space')
+            print(self.predict(text))
+

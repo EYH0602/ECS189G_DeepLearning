@@ -16,7 +16,8 @@ if 1:
 
     # ---- objection initialization section ---------------
     data_obj = DatasetLoader('stage 4', '')
-    data_obj.dataset_source_folder_path = '../../data/stage_4_data/text_classification/'
+    data_obj.dataset_source_folder_path = '../../data/stage_4_data/text_generation/'
+    data_obj.dataset_source_file_name = 'data'
     method_obj = MethodRNN('RNN', '')
 
     if torch.cuda.is_available():
@@ -39,11 +40,7 @@ if 1:
     setting_obj.prepare(data_obj, method_obj, result_obj, evaluate_obj)
     setting_obj.plotter = plotter
     setting_obj.print_setup_summary()
-    mean_score, std_score = setting_obj.load_run_save_evaluate()
-    print('************ Overall Performance ************')
-    print('RNN Accuracy: ' + str(mean_score) + ' +/- ' + str(std_score))
-    print('************ Finish ************')
-    # ------------------------------------------------------
+    setting_obj.load_run_save_evaluate()
     
     plotter.plot("stage_4_plot.png")
     

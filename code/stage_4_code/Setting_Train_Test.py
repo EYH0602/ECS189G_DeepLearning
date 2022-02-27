@@ -18,23 +18,19 @@ class SettingTrainTest(setting):
         # load dataset
         loaded_data = self.dataset.load()
 
-        # run MethodModule
-        # self.method.data = {'train': {'X': X_train, 'y': y_train}, 'test': {'X': X_test, 'y': y_test}}
         self.method.data = loaded_data
         self.method.plotter = self.plotter
         
         dic = Dictionary()
-        for sec in loaded_data['train']['X']:
+        for sec in loaded_data:
             dic.update_frequencies_by_sentence(sec)
-        dic.compute_dictionary(1000)
+        dic.compute_dictionary(self.method.vocab_size)
         self.method.word_dict = dic
-        
+        print('vocab size', len(dic.dictionary))
         learned_result = self.method.run()
 
         # save raw ResultModule
         self.result.data = learned_result
         self.result.save()
 
-        self.evaluate.data = learned_result
-
-        return self.evaluate.evaluate_accuracy(), None
+        return
