@@ -2,50 +2,96 @@
 Concrete IO class for a specific dataset
 """
 
-# Copyright (c) 2017-Current Jiawei Zhang <jiawei@ifmlab.org>
-# License: TBD
-
-import csv
 import os
+import json
 from code.base_class.dataset import dataset
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import string
+from torchtext.legacy import data
+from torchtext.legacy import datasets
+import torch
 
 
 class DatasetLoader(dataset):
     data = None
     dataset_source_folder_path = None
-
-    def __init__(self, dName=None, dDescription=None, n_file=500,):
-        super().__init__(dName, dDescription)
-        self.n_file = n_file
-
+    train_datafile_path = None
+    test_datafile_path = None
+    max_vocab_size = 250000
+    batch_size = 64
+    
+    TEXT = None
+    
     def load(self):
+        train_path = self.dataset_source_folder_path + self.train_datafile_path
+        test_path = self.dataset_source_folder_path + self.test_datafile_path
+        if not os.path.isfile(train_path) or not os.path.isfile(test_path):
+            self.prepare_data()
+
+        # load datasets
+        TEXT = data.Field(tokenize = 'spacy',
+                  tokenizer_language = 'en_core_web_sm',
+                  include_lengths = True)
+        LABEL = data.LabelField(dtype = torch.float)
+        self.TEXT = TEXT
+        fields = {
+            'text': ('text', TEXT),
+            'label': ('label', LABEL)
+        }
+        train_data = data.TabularDataset(train_path, 'json', fields)
+        test_data = data.TabularDataset(test_path, 'json', fields)
+
+        # build vocab
+        TEXT.build_vocab(train_data,
+                         max_size=self.max_vocab_size,
+                         vectors="glove.6B.100d",
+                         unk_init=torch.Tensor.normal_)
+        LABEL.build_vocab(train_data)
+
+        # split batches
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        train_iterator, test_iterator = data.BucketIterator.splits(
+            (train_data, test_data),
+            batch_size=self.batch_size,
+            device=device,
+            sort_key=lambda x: len(x.text),
+            sort_within_batch=True
+        )
+
+        return {'train': train_iterator, 'test': test_iterator}
+
+    def load_source_data(self):
         train_pos = self.load_individual(
             folder_path=self.dataset_source_folder_path, train=True, pos=True)
         train_neg = self.load_individual(
             folder_path=self.dataset_source_folder_path, train=True, pos=False)
-        
-        train = {
-            'X': train_pos['X'] + train_neg['X'],
-            'y': train_pos['y'] + train_neg['y']
-        }
+
+        train = train_pos + train_neg
+        train_json_str = ""
+        for train_instance in train:
+            train_json_str += json.dumps(train_instance)
 
         test_pos = self.load_individual(
             folder_path=self.dataset_source_folder_path, train=False, pos=True)
         test_neg = self.load_individual(
             folder_path=self.dataset_source_folder_path, train=False, pos=False)
-        
-        test = {
-            'X': test_pos['X'] + test_neg['X'],
-            'y': test_pos['y'] + test_neg['y']
-        }
 
-        return {'train': train, 'test': test}
+        test = test_pos + test_neg
+        test_json_str = ""
+        for test_instance in test:
+            test_json_str += json.dumps(test_instance)
+
+        with open(self.train_datafile_path, 'w') as f:
+            f.write(train_json_str)
+        with open(self.test_datafile_path, 'w') as f:
+            f.write(test_json_str)
+
+    def prepare_data(self):
+        self.load_source_data()
 
     def load_individual(self, folder_path: str, train: bool, pos: bool):
-        data = {'X': [], 'y':[]}
+        data = []
         dataset_name = ''
         dataset_label = ''
         label = 0
@@ -60,14 +106,11 @@ class DatasetLoader(dataset):
             dataset_label = 'neg/'
         source_path = folder_path + dataset_name + dataset_label
 
-        i = 0 
         for file in os.listdir(source_path):
-            if i >= self.n_file:
-                break
-            data['X'].append(self.tokenize(open(source_path + file, "r", encoding='utf-8').read()))
-            data['y'].append(label)
-            i += 1
-        
+            data.append({
+                'text': self.tokenize(open(source_path + file, "r", encoding='utf-8').read()),
+                'label': label
+            })
 
         return data
 
