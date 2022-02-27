@@ -70,7 +70,7 @@ class DatasetLoader(dataset):
         train = train_pos + train_neg
         train_json_str = ""
         for train_instance in train:
-            train_json_str += json.dumps(train_instance)
+            train_json_str += json.dumps(train_instance) + '\n'
 
         test_pos = self.load_individual(
             folder_path=self.dataset_source_folder_path, train=False, pos=True)
@@ -80,15 +80,21 @@ class DatasetLoader(dataset):
         test = test_pos + test_neg
         test_json_str = ""
         for test_instance in test:
-            test_json_str += json.dumps(test_instance)
-
-        with open(self.train_datafile_path, 'w') as f:
-            f.write(train_json_str)
-        with open(self.test_datafile_path, 'w') as f:
-            f.write(test_json_str)
+            test_json_str += json.dumps(test_instance) + '\n'
+        
+        return train_json_str, test_json_str
 
     def prepare_data(self):
-        self.load_source_data()
+        print('--preparing data')
+        train_str, test_str = self.load_source_data()
+        
+        train_path = self.dataset_source_folder_path + self.train_datafile_path
+        test_path = self.dataset_source_folder_path + self.test_datafile_path
+        with open(train_path, 'w') as f:
+            f.write(train_str)
+        with open(test_path, 'w') as f:
+            f.write(test_str)
+        print('--processed data stored in', self.dataset_source_folder_path)
 
     def load_individual(self, folder_path: str, train: bool, pos: bool):
         data = []
