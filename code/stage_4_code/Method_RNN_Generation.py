@@ -25,8 +25,8 @@ class MethodRNN(method, nn.Module):
     learning_rate = 1e-4
     plotter = None
     
-    lstm_size = 128
-    embedding_dim = 128
+    lstm_size = 256
+    embedding_dim = 256
     num_layers = 3
 
     # it defines the MLP model architecture, e.g.,
