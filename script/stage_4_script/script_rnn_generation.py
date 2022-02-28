@@ -47,5 +47,5 @@ if 1:
     setting_obj.load_run_save_evaluate(256)
     plotter.plot("stage_4_plot.png")
     
-    print(method_obj.predict('Knock knock. Who is there?'))
+    print(method_obj.predict("How are you doing"))
     

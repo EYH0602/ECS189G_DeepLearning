@@ -20,9 +20,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class MethodRNN(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 1
+    max_epoch = 500
     # it defines the learning rate for gradient descent based optimizer for model learning
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     plotter = None
     
     lstm_size = 128
@@ -66,8 +66,8 @@ class MethodRNN(method, nn.Module):
     
     def init_state(self, sequence_length):
         return (
-            torch.zeros(self.num_layers, sequence_length, self.lstm_size),
-            torch.zeros(self.num_layers, sequence_length, self.lstm_size)
+            torch.zeros(self.num_layers, sequence_length, self.lstm_size).to(device),
+            torch.zeros(self.num_layers, sequence_length, self.lstm_size).to(device)
         )
 
     # backward error propagation will be implemented by pytorch automatically
@@ -82,13 +82,15 @@ class MethodRNN(method, nn.Module):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         loss_function = nn.CrossEntropyLoss().to(device)
         # loss_function = nn.BCEWithLogitsLoss().to(device)
-        accuracy_evaluator = EvaluateAccuracy('training evaluator', '')
 
         for epoch in range(self.max_epoch):
             loss = 0
             state_h, state_c = self.init_state(self.sequence_length)
             for batch, (X_train, y_true) in enumerate(data):
                 optimizer.zero_grad()
+                
+                X_train = X_train.to(device)
+                y_true = y_true.to(device)
                 
                 y_pred, (state_h, state_c) = self.forward(X_train, (state_h, state_c))
                 
@@ -104,10 +106,11 @@ class MethodRNN(method, nn.Module):
                 loss += train_loss.item()
 
             loss = loss / len(data) 
-            print('------------------------------------------------------------')
-            print('Epoch:', epoch)
-            print('Loss:', loss)
-            print('------------------------------------------------------------')
+            if epoch % 50 == 0:
+                print('------------------------------------------------------------')
+                print('Epoch:', epoch)
+                print('Loss:', loss)
+                print('------------------------------------------------------------')
                 
             # add to graph if avaliable
             if self.plotter:
@@ -134,11 +137,11 @@ class MethodRNN(method, nn.Module):
         state_h, state_c = self.init_state(len(words))
         
         for i in range(next_words):
-            X = torch.tensor([[self.dataset.word_to_index[w] for w in words[i:]]])
+            X = torch.tensor([[self.dataset.word_to_index[w] for w in words[i:]]]).to(device)
             y_pred, (state_h, state_c) = self.forward(X, (state_h, state_c))
             
             last_word_logits = y_pred[0][-1]
-            p = torch.nn.functional.softmax(last_word_logits, dim=0).detach().numpy()
+            p = F.softmax(last_word_logits, dim=0).cpu().detach().numpy()
             word_index = np.random.choice(len(last_word_logits), p=p)
             words.append(self.dataset.index_to_word[word_index])
         
