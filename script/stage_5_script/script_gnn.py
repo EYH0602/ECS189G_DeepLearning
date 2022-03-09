@@ -33,7 +33,7 @@ if 1:
 
     evaluate_obj = EvaluateAccuracy('accuracy', '')
     
-    plotter = Plotter()
+    plotter = Plotter('GCN Plot CORA', 'stage_5_plot.png')
     # ------------------------------------------------------
 
     # ---- running section ---------------------------------
@@ -47,5 +47,5 @@ if 1:
     print('************ Finish ************')
     # ------------------------------------------------------
     
-    plotter.plot("stage_5_plot.png")
+    plotter.plot()
     

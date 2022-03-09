@@ -6,7 +6,8 @@ Concrete MethodModule class for a specific learning MethodModule
 # License: TBD
 
 from src.base_class.method import method
-from src.stage_2_code.Evaluate_Accuracy import EvaluateAccuracy
+from src.stage_5_code.Evaluate_Accuracy import EvaluateAccuracy
+from src.stage_5_code.Training_Conv_Plotter import Plotter
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
@@ -21,7 +22,7 @@ class MethodGNN(method, torch.nn.Module):
     mask = None
     max_epoch = 3000
     learning_rate = 1e-5
-    plotter = None
+    plotter: Plotter = None
 
     def __init__(self, mName, mDescription):
         method.__init__(self, mName, mDescription)
@@ -42,10 +43,6 @@ class MethodGNN(method, torch.nn.Module):
         y_pred = F.log_softmax(x, dim=1)
         return y_pred
                 
-
-    # backward error propagation will be implemented by pytorch automatically
-    # so, we don't need to define the error backpropagation function here
-
     def train(self, X, edge, y):
         
         # check for plot setting
@@ -70,11 +67,12 @@ class MethodGNN(method, torch.nn.Module):
             train_loss.backward()
             optimizer.step()
 
+            accuracy_evaluator.data = {
+                'true_y': y_true[self.mask['idx_train']],
+                'pred_y': y_pred[self.mask['idx_train']].cpu().max(1)[1]
+            }
+            
             if epoch % 100 == 0:
-                accuracy_evaluator.data = {
-                    'true_y': y_true,
-                    'pred_y': y_pred.cpu().max(1)[1]
-                }
                 print(
                     'Epoch:', epoch,
                     'Accuracy:', accuracy_evaluator.evaluate_accuracy(),
@@ -86,8 +84,18 @@ class MethodGNN(method, torch.nn.Module):
             
             # add to graph if avaliable
             if self.plotter:
-                self.plotter.xs.append(epoch)
-                self.plotter.ys.append(train_loss.item())
+                self.plotter.train_loss.append(train_loss.item())
+                self.plotter.train_acc.append(accuracy_evaluator.evaluate_accuracy(verbose=False))
+                
+                # also plot validation
+                val_loss = loss_function(y_pred[self.mask['idx_val']], y_true[self.mask['idx_val']])
+                accuracy_evaluator.data = {
+                    'true_y': y_true[self.mask['idx_val']],
+                    'pred_y': y_pred[self.mask['idx_val']].cpu().max(1)[1]
+                }
+                self.plotter.val_loss.append(val_loss.item())
+                self.plotter.val_acc.append(accuracy_evaluator.evaluate_accuracy(verbose=False))
+                
 
     def test(self, X, edge):
         # do the testing, and result the result
