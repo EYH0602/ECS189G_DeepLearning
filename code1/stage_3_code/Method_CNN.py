@@ -31,6 +31,7 @@ class Method_CNN(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
 
+
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=10, kernel_size=5, stride=1, padding=0)
         self.conv2 = nn.Conv2d(in_channels=10, out_channels=10, kernel_size=5, stride=1, padding=0)
 
