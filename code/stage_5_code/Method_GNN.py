@@ -19,8 +19,8 @@ print("training on: " + device.type)
 class MethodGNN(method, torch.nn.Module):
     data = None
     mask = None
-    max_epoch = 1000
-    learning_rate = 1e-4
+    max_epoch = 3000
+    learning_rate = 1e-5
     plotter = None
 
     def __init__(self, mName, mDescription):
@@ -28,8 +28,8 @@ class MethodGNN(method, torch.nn.Module):
         torch.nn.Module.__init__(self)
 
         # ! temp settings for cora dataset
-        self.conv1 = GCNConv(1433, 16)
-        self.conv2 = GCNConv(16, 7)
+        self.conv1 = GCNConv(1433, 789)
+        self.conv2 = GCNConv(789, 7)
 
     def forward(self, x, edge):
         """Forward propagation"""
