@@ -1,9 +1,9 @@
-from code.stage_5_code.Dataset_Loader_Node_Classification import DatasetLoader
-from code.stage_5_code.Method_GNN import MethodGNN
-from code.stage_5_code.Result_Saver import ResultSaver
-from code.stage_5_code.Setting_Train_Test import SettingTrainTest
-from code.stage_5_code.Evaluate_Accuracy import EvaluateAccuracy
-from code.stage_5_code.Training_Conv_Plotter import Plotter
+from src.stage_5_code.Dataset_Loader_Node_Classification import DatasetLoader
+from src.stage_5_code.Method_GNN import MethodGNN
+from src.stage_5_code.Result_Saver import ResultSaver
+from src.stage_5_code.Setting_Train_Test import SettingTrainTest
+from src.stage_5_code.Evaluate_Accuracy import EvaluateAccuracy
+from src.stage_5_code.Training_Conv_Plotter import Plotter
 import numpy as np
 import torch
 

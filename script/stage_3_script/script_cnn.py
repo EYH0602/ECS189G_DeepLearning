@@ -1,9 +1,9 @@
-from code.stage_3_code.Dataset_Loader import DatasetLoader
-from code.stage_3_code.Method_CNN import MethodCNN
-from code.stage_3_code.Result_Saver import ResultSaver
-from code.stage_3_code.Setting_Train_Test import SettingTrainTest
-from code.stage_3_code.Evaluate_Accuracy import EvaluateAccuracy
-from code.stage_3_code.Training_Conv_Plotter import Plotter
+from src.stage_3_code.Dataset_Loader import DatasetLoader
+from src.stage_3_code.Method_CNN import MethodCNN
+from src.stage_3_code.Result_Saver import ResultSaver
+from src.stage_3_code.Setting_Train_Test import SettingTrainTest
+from src.stage_3_code.Evaluate_Accuracy import EvaluateAccuracy
+from src.stage_3_code.Training_Conv_Plotter import Plotter
 import numpy as np
 import torch
 

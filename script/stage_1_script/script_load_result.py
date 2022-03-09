@@ -1,4 +1,4 @@
-from code.stage_1_code.Result_Loader import Result_Loader
+from src.stage_1_code.Result_Loader import Result_Loader
 
 if 1:
     result_obj = Result_Loader('saver', '')
