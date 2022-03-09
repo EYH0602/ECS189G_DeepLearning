@@ -10,12 +10,12 @@ import torch
 import numpy as np
 import scipy.sparse as sp
 
-class Dataset_Loader(dataset):
+class DatasetLoader(dataset):
     data = None
     dataset_name = None
 
     def __init__(self, seed=None, dName=None, dDescription=None):
-        super(Dataset_Loader, self).__init__(dName, dDescription)
+        super(DatasetLoader, self).__init__(dName, dDescription)
 
     def adj_normalize(self, mx):
         """normalize sparse matrix"""
@@ -45,7 +45,10 @@ class Dataset_Loader(dataset):
         print('Loading {} dataset...'.format(self.dataset_name))
 
         # load node data from file
-        idx_features_labels = np.genfromtxt("{}/node".format(self.dataset_source_folder_path), dtype=np.dtype(str))
+        idx_features_labels = np.genfromtxt(
+            "{}/node".format(self.dataset_source_folder_path + self.dataset_name), 
+            dtype=np.dtype(str)
+        )
         features = sp.csr_matrix(idx_features_labels[:, 1:-1], dtype=np.float32)
         onehot_labels = self.encode_onehot(idx_features_labels[:, -1])
 
@@ -53,7 +56,10 @@ class Dataset_Loader(dataset):
         idx = np.array(idx_features_labels[:, 0], dtype=np.int32)
         idx_map = {j: i for i, j in enumerate(idx)}
         reverse_idx_map = {i: j for i, j in enumerate(idx)}
-        edges_unordered = np.genfromtxt("{}/link".format(self.dataset_source_folder_path), dtype=np.int32)
+        edges_unordered = np.genfromtxt(
+            "{}/link".format(self.dataset_source_folder_path + self.dataset_name), 
+            dtype=np.int32
+        )
         edges = np.array(list(map(idx_map.get, edges_unordered.flatten())), dtype=np.int32).reshape(edges_unordered.shape)
         adj = sp.coo_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])), shape=(onehot_labels.shape[0], onehot_labels.shape[0]), dtype=np.float32)
         adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
@@ -92,6 +98,9 @@ class Dataset_Loader(dataset):
         # val_x = features[idx_val]
         # test_x = features[idx_test]
         # print(train_x, val_x, test_x)
+
+        # transpose edges for torch_geometric
+        edges = torch.LongTensor(edges).t().contiguous()
 
         train_test_val = {'idx_train': idx_train, 'idx_test': idx_test, 'idx_val': idx_val}
         graph = {'node': idx_map, 'edge': edges, 'X': features, 'y': labels, 'utility': {'A': adj, 'reverse_idx': reverse_idx_map}}
