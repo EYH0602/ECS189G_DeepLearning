@@ -20,7 +20,7 @@ print("training on: " + device.type)
 class MethodGNN(method, torch.nn.Module):
     data = None
     mask = None
-    max_epoch = 3000
+    max_epoch = 5000
     learning_rate = 1e-5
     plotter: Plotter = None
 
