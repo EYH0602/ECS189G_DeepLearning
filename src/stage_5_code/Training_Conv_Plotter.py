@@ -16,12 +16,13 @@ class Plotter:
         self.plot_name = plot_name
         self.file_name = file_name
         
-    def plot(self):
+    def plot(self, validation=True):
         fig, ax = plt.subplots(1,2,figsize = (16,4))
         ax[0].plot(self.train_loss, color='#EFAEA4', label = 'Training Loss')
-        ax[0].plot(self.val_loss, color='#B2D7D0', label = 'Validation Loss')
         ax[1].plot(self.train_acc, color='#EFAEA4',label = 'Training Accuracy')
-        ax[1].plot(self.val_acc, color='#B2D7D0', label = 'Validation Accuracy')
+        if validation:
+            ax[0].plot(self.val_loss, color='#B2D7D0', label = 'Validation Loss')
+            ax[1].plot(self.val_acc, color='#B2D7D0', label = 'Validation Accuracy')
         ax[0].legend()
         ax[1].legend()
         ax[0].set_xlabel('Epochs')

@@ -47,5 +47,5 @@ if 1:
     print('************ Finish ************')
     # ------------------------------------------------------
     
-    plotter.plot()
+    plotter.plot(validation=False)
     
